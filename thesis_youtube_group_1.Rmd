@@ -1,0 +1,352 @@
+---
+title: "youtube_project_group_1"
+author: "Yuwnen Kai"
+date: "2/21/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+library(dplyr)
+library(tidytext)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(scales)
+library(wordcloud)
+library(wordcloud2)
+
+library(htmlwidgets)
+library(webshot)
+
+library(tm)
+library(BiocManager)
+library(syuzhet)
+```
+
+```{r}
+youtuber <- read.csv('full_youtuber_group1_v5.csv')
+youtuber_rank1 <- filter(youtuber, youtuber$rank == 1)
+youtuber_rank3 <- filter(youtuber, youtuber$rank == 3)
+
+youtuber_title <- youtuber_rank1$title
+
+youtuber_rank3_title <- youtuber_rank3$title
+```
+
+```{r}
+corpus_youtuber_title <- Corpus(VectorSource(youtuber_title))
+
+corpus_rank3_title <- Corpus(VectorSource(youtuber_rank3_title))
+```
+
+```{r}
+# rank1 title
+corpus_plain_title <- tm_map(corpus_youtuber_title, PlainTextDocument)
+corpus_lower_title <- tm_map(corpus_plain_title, tolower)
+corpus_number_title <- tm_map(corpus_lower_title, removeNumbers)
+corpus_no_punc_title <- tm_map(corpus_number_title,removePunctuation)
+corpus_stop_words_title <- tm_map(corpus_no_punc_title, removeWords, stopwords("english"))
+corpus_whitespace_title <- tm_map(corpus_stop_words_title, stripWhitespace)
+corpus_own_stop_words_title <- tm_map(corpus_whitespace_title, removeWords, c("naomi","boyer","ashley","brooke","forella","zelaya","chriselle","lim","aelx","centomo","audrey","coyne","amy","lee","misssperu","vanessa","ziletti","magicotrucco","aimee","song","style"))
+corpus_stem_title <- tm_map(corpus_own_stop_words_title, stemDocument) 
+corpus_stem_title
+
+```
+
+```{r}
+# rank3 title
+corpus_plain_title <- tm_map(corpus_rank3_title, PlainTextDocument)
+corpus_lower_title <- tm_map(corpus_plain_title, tolower)
+corpus_number_title <- tm_map(corpus_lower_title, removeNumbers)
+corpus_no_punc_title <- tm_map(corpus_number_title,removePunctuation)
+corpus_stop_words_title <- tm_map(corpus_no_punc_title, removeWords, stopwords("english"))
+corpus_whitespace_title <- tm_map(corpus_stop_words_title, stripWhitespace)
+corpus_own_stop_words_title <- tm_map(corpus_whitespace_title, removeWords, c("naomi","boyer","ashley","brooke","forella","zelaya","chriselle","lim","aelx","centomo","audrey","coyne","amy","lee","misssperu","vanessa","ziletti","magicotrucco","aimee","song","style"))
+corpus_stem_title_rank3 <- tm_map(corpus_own_stop_words_title, stemDocument) 
+corpus_stem_title_rank3
+
+```
+# title all
+```{r}
+youtuber_title_all <- youtuber$title
+# 3469
+corpus_youtuber_title_all <- Corpus(VectorSource(youtuber_title_all))
+
+# all title  
+text_title_all <- rep()
+for(i in 1:3469){
+  text_title_all = append(text_title_all, corpus_youtuber_title_all[[i]]$content)
+}
+
+text_title_all_df <- tibble(line=1:3469, text=text_title_all)
+
+# all title
+text_title_token_all <- text_title_all_df %>% unnest_tokens(word, text)
+# head(text_title_token_all)
+
+vlog_count <- text_title_token_all %>% filter(word == 'vlog') %>% count
+#282
+
+haul_count <- text_title_token_all %>% filter(word == 'haul') %>% count
+# haul_count #296
+
+```
+
+## Description
+```{r}
+youtuber_description <- youtuber$description
+corpus_youtuber_description <- Corpus(VectorSource(youtuber_description))
+
+corpus_plain_description <- tm_map(corpus_youtuber_description, PlainTextDocument)
+corpus_lower_description <- tm_map(corpus_plain_description, tolower)
+corpus_number_description <- tm_map(corpus_lower_description, removeNumbers)
+corpus_no_punc_description <- tm_map(corpus_number_description,removePunctuation)
+corpus_stop_words_description <- tm_map(corpus_no_punc_description, removeWords, stopwords("english"))
+corpus_whitespace_description <- tm_map(corpus_stop_words_description, stripWhitespace)
+corpus_own_stop_words_description <- tm_map(corpus_whitespace_description, removeWords, c("naomi","boyer","ashley","brooke","forella","zelaya","chriselle","lim","aelx","centomo","audrey","coyne","amy","lee","misssperu","vanessa","ziletti","magicotrucco","aimee","song","style"))
+corpus_stem_description <- tm_map(corpus_own_stop_words_description, stemDocument)
+corpus_stem_description #3469
+
+text_des_all <- rep()
+for(i in 1:3469){
+  text_des_all = append(text_des_all, corpus_stem_description[[i]]$content)
+}
+
+text_des_df <- tibble(line=1:3469, text=text_des_all)
+
+# all title
+text_des_token <- text_des_df %>% unnest_tokens(word, text) %>% count()
+text_des_token
+
+frequencies_description <- DocumentTermMatrix(corpus_stem_description)
+
+ft_description <- findFreqTerms(frequencies_description, lowfreq = 1200, highfreq = Inf)
+ft_description
+
+plot(frequencies_description,terms=findFreqTerms(frequencies_description, lowfreq=1200),corThreshold=0.60)
+```
+# count the length of rank 1 and rank 3 videos
+```{r}
+# rank 1 uncleaned count
+text_title_rank1_unclean <- rep()
+for(i in 1:1159){
+  text_title_rank1_unclean = append(text_title_rank1_unclean, corpus_youtuber_title[[i]]$content)
+}
+
+text_title_rank1_unclean <- tibble(line=1:1159, text=text_title_rank1_unclean)
+text_title_rank1_unclean %>% unnest_tokens(word, text) %>% count
+
+
+# rank 3 uncleaned count
+text_title_rank3_unclean <- rep()
+for(i in 1:1157){
+  text_title_rank3_unclean = append(text_title_rank3_unclean, corpus_rank3_title[[i]]$content)
+}
+
+text_title_rank3_unclean <- tibble(line=1:1157, text=text_title_rank3_unclean)
+text_title_rank3_unclean %>% unnest_tokens(word, text) %>% count
+```
+
+
+# Rank 1 
+```{r}
+# rank1 title  corpus_stem_title_rank3
+text_title <- rep()
+for(i in 1:1159){
+  text_title = append(text_title,corpus_stem_title[[i]]$content)
+}
+
+text_title_df <- tibble(line=1:1159, text=text_title)
+
+text_title_nrc<-get_nrc_sentiment(text_title_df[,2]$text)
+# text_title_nrc
+
+pie_graph_title <- data.frame(emotion = names(sort(colSums(prop.table(text_title_nrc[, 9:10])))), proportion = colSums(prop.table(text_title_nrc[, 9:10])))
+
+ggplot(pie_graph_title, aes(x="", y=proportion, fill=emotion))+geom_bar(width = 1, stat = "identity")+coord_polar("y", start=0)+scale_fill_brewer(palette="Blues")+theme_minimal()
+
+nrcothers_title = sort(colSums(prop.table(text_title_nrc[, 1:8])))
+barplot(nrcothers_title)
+
+# rank1 title
+text_title_token <- text_title_df %>% unnest_tokens(word, text)
+text_title_token %>% count()
+# head(text_title_token)
+
+title_afinn <- text_title_token %>% inner_join(get_sentiments("afinn"))
+# head(title_afinn)
+
+# qplot(title_afinn$word,title_afinn$value,
+#       xlab="word",ylab="afinn score")
+
+sum(title_afinn$value)
+
+
+title_bing <- text_title_token %>% inner_join(get_sentiments("bing"))
+head(title_bing)
+title_bing %>% ggplot(aes(sentiment, "")) + geom_col() + xlab(NULL)
+```
+
+
+
+```{r}
+# rank1 title
+title_count <- text_title_token %>% count(word, sort = TRUE) 
+
+title_count_barplot <- title_count %>% filter(n > 40) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+title_count_barplot
+
+set.seed(12345)
+title_count_dataframe <- data.frame(title_count)
+title_count_wordcloud <- wordcloud2(title_count_dataframe,minSize = 20)
+title_count_wordcloud
+
+saveWidget(title_count_wordcloud, "tmp.html", selfcontained = F)
+webshot("tmp.html", "group1_wc_1.png", delay = 5, vwidth = 1000, vheight = 1000)
+
+```
+
+# Rank 3
+```{r}
+# rank3 title  
+text_title_rank3 <- rep()
+for(i in 1:1157){
+  text_title_rank3 = append(text_title_rank3, corpus_stem_title_rank3[[i]]$content)
+}
+
+text_title_rank3_df <- tibble(line=1:1157, text=text_title_rank3)
+
+text_title_nrc_rank3<-get_nrc_sentiment(text_title_rank3_df[,2]$text)
+# text_title_nrc
+
+pie_graph_title_rank3 <- data.frame(emotion = names(sort(colSums(prop.table(text_title_nrc_rank3[, 9:10])))), proportion = colSums(prop.table(text_title_nrc_rank3[, 9:10])))
+
+ggplot(pie_graph_title_rank3, aes(x="", y=proportion, fill=emotion))+geom_bar(width = 1, stat = "identity")+coord_polar("y", start=0)+scale_fill_brewer(palette="Blues")+theme_minimal()
+
+nrcothers_title_rank3 = sort(colSums(prop.table(text_title_nrc_rank3[, 1:8])))
+barplot(nrcothers_title_rank3)
+
+
+# rank3 title
+text_title_token_rank3 <- text_title_rank3_df %>% unnest_tokens(word, text)
+# head(text_title_token_rank3)
+text_title_token_rank3 %>% count()
+
+title_afinn_rank3 <- text_title_token_rank3 %>% inner_join(get_sentiments("afinn"))
+# head(title_afinn_rank3)
+
+# qplot(title_afinn_rank3$word,title_afinn_rank3$value,
+#       xlab="word",ylab="afinn score")
+
+sum(title_afinn_rank3$value)
+
+
+title_bing_rank3 <- text_title_token_rank3 %>% inner_join(get_sentiments("bing"))
+head(title_bing_rank3)
+title_bing_rank3 %>% ggplot(aes(sentiment, "")) + geom_col() + xlab(NULL)
+```
+
+```{r}
+# rank3 title
+title_count_rank3 <- text_title_token_rank3 %>% count(word, sort = TRUE) 
+
+title_count_barplot_rank3 <- title_count_rank3 %>% filter(n > 40) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+title_count_barplot_rank3
+
+set.seed(12345)
+title_count_dataframe_rank3 <- data.frame(title_count_rank3)
+title_count_wordcloud_rank3 <- wordcloud2(title_count_dataframe_rank3,minSize = 20)
+title_count_wordcloud_rank3
+
+saveWidget(title_count_wordcloud_rank3, "tmp.html", selfcontained = F)
+webshot("tmp.html", "group1_wc_2.png", delay = 5, vwidth = 1000, vheight = 1000)
+
+```
+
+# vlog analysis
+
+## rank 1
+```{r}
+vlog <- text_title_token %>% filter(word == 'vlog')
+# 128
+
+vlog_text <- left_join(vlog, text_title_df, by="line") %>% select(c("text")) 
+
+vlog_token <- vlog_text %>% unnest_tokens(word, text) %>% filter(word != 'vlog') %>% count(word, sort = TRUE) 
+
+vlog_token_barplot <- vlog_token  %>% filter(n > 5) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+vlog_token_barplot
+
+set.seed(12345)
+# vlog_dataframe <- data.frame(vlog_token)
+vlog_wordcloud <- wordcloud2(vlog_token,minSize = 7)
+vlog_wordcloud
+
+saveWidget(vlog_wordcloud, "tmp.html", selfcontained = F)
+webshot("tmp.html", "group1_wc_3.png", delay = 5, vwidth = 1000, vheight = 1000)
+
+```
+
+## rank 3
+```{r}
+vlog_rank3 <- text_title_token_rank3 %>% filter(word == 'vlog')
+# 58
+vlog_text <- left_join(vlog_rank3, text_title_rank3_df, by="line") %>% select(c("text")) 
+
+vlog_token <- vlog_text %>% unnest_tokens(word, text) %>% filter(word != 'vlog') %>% count(word, sort = TRUE) 
+
+vlog_token_barplot <- vlog_token  %>% filter(n >= 3) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+vlog_token_barplot
+
+set.seed(12345)
+vlog_wordcloud <- wordcloud2(vlog_token,minSize = 5)
+vlog_wordcloud
+
+saveWidget(vlog_wordcloud, "tmp.html", selfcontained = F)
+webshot("tmp.html", "group1_wc_4.png", delay = 5, vwidth = 1000, vheight = 1000)
+```
+
+# haul analysis
+
+## rank 1
+```{r}
+haul <- text_title_token %>% filter(word == 'haul')
+#68
+haul_text <- left_join(haul, text_title_df, by="line") %>% select(c("text")) 
+
+haul_token <- haul_text %>% unnest_tokens(word, text) %>% filter(word != 'haul') %>% count(word, sort = TRUE) 
+
+haul_token_barplot <- haul_token  %>% filter(n > 5) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+haul_token_barplot
+
+set.seed(12345)
+haul_wordcloud <- wordcloud2(haul_token,minSize = 6)
+haul_wordcloud
+
+saveWidget(haul_wordcloud, "tmp.html", selfcontained = F)
+webshot("tmp.html", "group1_wc_5.png", delay = 5, vwidth = 1000, vheight = 1000)
+
+```
+# haul analysis
+## rank 3
+```{r}
+haul_rank3 <- text_title_token_rank3 %>% filter(word == 'haul')
+#100
+haul_text <- left_join(haul, text_title_rank3_df, by="line") %>% select(c("text")) 
+
+haul_token <- haul_text %>% unnest_tokens(word, text) %>% filter(word != 'haul') %>% count(word, sort = TRUE) 
+
+haul_token_barplot <- haul_token  %>% filter(n > 5) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+haul_token_barplot
+
+set.seed(12345)
+haul_wordcloud <- wordcloud2(haul_token,minSize = 7)
+haul_wordcloud
+
+saveWidget(haul_wordcloud, "tmp.html", selfcontained = F)
+webshot("tmp.html", "group1_wc_6.png", delay = 5, vwidth = 1000, vheight = 1000)
+```
+
+
